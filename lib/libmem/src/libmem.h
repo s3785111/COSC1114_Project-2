@@ -3,6 +3,7 @@
 
 #define _DEFAULT_SOURCE
 
+#include "stdbool.h"
 #include "stdio.h"
 #include "sys/queue.h"
 
@@ -27,5 +28,7 @@ void printBlks(AllocStatus status);
 void printBlk(AllocStatus status, struct entry *np);
 void *alloc(size_t chunk_size);
 void dealloc(void *chunk);
+
+__attribute__((weak)) struct entry *strategy(size_t chunk_size);
 
 #endif
