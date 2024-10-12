@@ -1,12 +1,32 @@
 #include "firstfit.h"
 #include "libmem.h"
 
-struct entry *strategy(size_t chunk_size) {
-  printf("Allocating with strategy: first fit\n");
+void *strategy(size_t chunk_size) {
+  printf("Allocating with strategy: best fit.\n");
+
+  struct entry *entry = NULL;
+
+  while ((entry = (_getNextEntry(FREE, entry)))) {
+    if (entry->size >= chunk_size)
+      return entry;
+  }
+
   return NULL;
 }
 
 int main() {
-  alloc(14);
-  return 0;
+  void *alloc5  = alloc(5);
+  void *alloc33 = alloc(33);
+
+  dealloc(NULL);
+  dealloc(NULL);
+
+  void *alloc12 = alloc(12);
+
+  dealloc(alloc12);
+
+  printBlks(ALLOCATED);
+  printBlks(FREE);
+
+  return EXIT_SUCCESS;
 }

@@ -1,22 +1,20 @@
 #include "bestfit.h"
 #include "libmem.h"
 
-struct entry *strategy(size_t chunk_size) {
+void *strategy(size_t chunk_size) {
   printf("Allocating with strategy: best fit.\n");
-  return NULL;
+
+  struct entry *entry   = NULL;
+  struct entry *bestfit = NULL;
+
+  while ((entry = (_getNextEntry(FREE, entry)))) {
+    if (entry->size >= chunk_size && entry->size < bestfit->size)
+      bestfit = entry;
+  }
+
+  return bestfit;
 }
 
 int main() {
-  void *alloc5  = alloc(5);
-  void *alloc33 = alloc(33);
-
-  printBlks(ALLOCATED);
-  printBlks(FREE);
-
-  dealloc(NULL);
-
-  printBlks(ALLOCATED);
-  printBlks(FREE);
-
-  return 0;
+  return EXIT_SUCCESS;
 }

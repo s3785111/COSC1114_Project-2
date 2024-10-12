@@ -3,22 +3,20 @@
 
 #define _DEFAULT_SOURCE
 
-#include "stdbool.h"
-#include "stdio.h"
-#include "sys/queue.h"
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/queue.h>
+#include <unistd.h>
 
 typedef enum {
   ALLOCATED,
   FREE
 } AllocStatus;
 
-struct memblk {
-  size_t size;
-  void *block;
-};
-
 struct entry {
-  struct memblk data;
+  size_t size;
+  void *data;
   SLIST_ENTRY(entry)
   entries;
 };
@@ -29,6 +27,7 @@ void printBlk(AllocStatus status, struct entry *np);
 void *alloc(size_t chunk_size);
 void dealloc(void *chunk);
 
-__attribute__((weak)) struct entry *strategy(size_t chunk_size);
+struct entry *_getNextEntry(AllocStatus status, struct entry *entry);
+__attribute__((weak)) void *strategy(size_t chunk_size);
 
 #endif

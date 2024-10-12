@@ -1,12 +1,9 @@
 #include "libmem.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 
 static struct slisthead allocatedHead = SLIST_HEAD_INITIALIZER(allocatedHead);
 static struct slisthead freedHead     = SLIST_HEAD_INITIALIZER(freeHead);
 
-struct entry *strategy(size_t chunk_size) {
+void *strategy(size_t __attribute__((unused)) chunk_size) {
   fprintf(stderr, "Error: Allocation strategy not implemented\n");
   exit(EXIT_FAILURE);
 }
@@ -27,7 +24,7 @@ struct entry *strategy(size_t chunk_size) {
  * =============================================================================== */
 void printBlk(AllocStatus status, struct entry *np) {
   printf(status == ALLOCATED ? "[Alloc]" : "[Dealloc]");
-  printf(" Size: %lu, Block: %p, Entry Pointer: %p\n", np->data.size, np->data.block, np);
+  printf(" Size: %lu, Block: %p, Entry Pointer: %p\n", np->size, np->data, np);
 }
 
 /* =============================================================================== */
@@ -51,6 +48,33 @@ void printBlks(AllocStatus status) {
   }
 }
 
+/* ------------------------------------- ACCESS -----------------------------------*/
+
+/* =============================================================================== */
+/**
+ * @brief Retrieves the next entry in the chosen list.
+ *
+ * Returns the next entry in the allocated or freed list depending on the
+ * specified status. If `entry` is NULL, returns the head of the list.
+ *
+ * @param status Specifies whether to search in the allocated or freed list.
+ *               Pass ALLOCATED for the allocated list, or DEALLOCATED for the freed list.
+ * @param entry  Pointer to the current entry. If NULL, returns the head of the list.
+ *
+ * @return Pointer to the next entry in the list, or NULL if at the end of the list.
+ *
+ * =============================================================================== */
+struct entry *_getNextEntry(AllocStatus status, struct entry *entry) {
+  struct slisthead head = (status == ALLOCATED) ? allocatedHead : freedHead;
+
+  // Return head entry if passed null
+  if (entry == NULL)
+    return head.slh_first;
+
+  // Otherwise, return next entry
+  return SLIST_NEXT(entry, entries);
+}
+
 /* ----------------------------------- MANAGEMENT ---------------------------------*/
 
 /* =============================================================================== */
@@ -66,7 +90,7 @@ void printBlks(AllocStatus status) {
  * =============================================================================== */
 void *alloc(size_t chunk_size) {
   printf("Calling alloc with size: %zu.\n", chunk_size);
-  struct entry *allocatedchunk;
+  struct entry *allocated_chunk;
 
   // Normalise chunk size to nearest valid number
   size_t allocation_size;
@@ -77,37 +101,37 @@ void *alloc(size_t chunk_size) {
   if (chunk_size <= 32) allocation_size = 32;
 
   // Attempt to allocate based on strategy
-  if ((allocatedchunk = strategy(allocation_size)))
-    return allocatedchunk;
+  if ((allocated_chunk = strategy(allocation_size))) {
+    SLIST_REMOVE(&freedHead, allocated_chunk, entry, entries);
+    SLIST_INSERT_HEAD(&allocatedHead, allocated_chunk, entries);
+    return allocated_chunk->data;
+  }
 
   // Otherwise, allocate new memory block:
 
-  // Request memory for a new list entry
-  // @todo First check free list if block is available to avoid unnecessary memory allocation
-  //
   // Considering this is a toy implementation of malloc, i'm assuming this dynamic allocation
   // is not considered a part of the memory "allocated" to the program. Other implementations
   // of linked lists would use dynamic allocation for "entries" or list nodes regardless.
-  struct entry *newmem = (struct entry *)sbrk(sizeof(struct entry));
-  if (newmem == (void *)-1) {
+  allocated_chunk = (struct entry *)sbrk(sizeof(struct entry));
+  if (allocated_chunk == (void *)-1) {
     fprintf(stderr, "Error: Failed to allocate memory for entry\n");
     exit(EXIT_FAILURE);
   }
 
   // Allocate the requested block of memory
-  newmem->data.block = sbrk(allocation_size);
-  if (newmem->data.block == (void *)-1) {
+  allocated_chunk->data = sbrk(allocation_size);
+  if (allocated_chunk->data == (void *)-1) {
     fprintf(stderr, "Error: Failed to allocate memory with sbrk\n");
     exit(EXIT_FAILURE);
   }
 
-  newmem->data.size = allocation_size;
+  allocated_chunk->size = allocation_size;
 
   // Insert the new entry into the allocated list
-  SLIST_INSERT_HEAD(&allocatedHead, newmem, entries);
+  SLIST_INSERT_HEAD(&allocatedHead, allocated_chunk, entries);
 
   // Return the allocated block
-  return newmem->data.block;
+  return allocated_chunk->data;
 }
 
 /* =============================================================================== */
@@ -144,21 +168,21 @@ void dealloc(void *chunk) {
 
     // Traverse list for matching entry
     SLIST_FOREACH(deallocmem, &allocatedHead, entries) {
-      if (deallocmem->data.block == chunk) {
+      if (deallocmem->data == chunk) {
         searchedblk = deallocmem;
         break;
       }
     }
 
     // Move block to deallocated list if matching entry is found
-    if (searchedblk != NULL && searchedblk->data.block == chunk) {
+    if (searchedblk != NULL && searchedblk->data == chunk) {
       SLIST_REMOVE(&allocatedHead, searchedblk, entry, entries);
       SLIST_INSERT_HEAD(&freedHead, searchedblk, entries);
     }
 
     // Otherwise, exit with error code
     else {
-      fprintf(stderr, "Fatal Error: Attempting to deallocate invalid block\n");
+      fprintf(stderr, "Fatal Error: Attempting to deallocate invalid chunk\n");
       fprintf(stderr, "Exiting.\n");
       exit(EXIT_FAILURE);
     }

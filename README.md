@@ -1,13 +1,15 @@
-# COSC1114 Operating Systems Principals Assignment 1
+# COSC1114 Operating Systems Principals Assignment 2
 
  - Author: Matthew Ricci
  - Student Number: s3785111
 
 #### Table of Contents
 <!-- mtoc-start -->
-1. [Build Instructions](#build-instructions)
-2. [Executing the binaries](#executing-the-binaries)
-3. [Example execution workflow](#example-execution-workflow)
+
+* [Build Instructions](#build-instructions)
+  * [Executing the binaries](#executing-the-binaries)
+  * [Example execution workflow](#example-execution-workflow)
+
 <!-- mtoc-end -->
 
 Locks and conditions are implemented in ```/mscopier/src/mscopier.c``` within thread functions ```mscopier_read``` and ```mscopier_write``` on lines 97 and 142 respectively.

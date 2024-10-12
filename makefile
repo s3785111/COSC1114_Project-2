@@ -7,7 +7,7 @@ endif
 CC = gcc
 
 ifeq ($(NOWERROR),true)
-	CFLAGS += -Wall -Wextra -std=c99
+	CFLAGS += -Wall -Wextra -std=c99 -g
 else
 	CFLAGS += -Wall -Werror -Wextra -std=c99
 endif
@@ -25,7 +25,7 @@ SUBPROJECTS = bestfit firstfit
 # Main target to build everything
 all: $(LIBMEM_DIR)/$(BIN)/$(LIBMEM).so $(patsubst %,link-%,$(SUBPROJECTS))
 
-# Build the libmem.so library and link it to the build directory
+# Build the libmem.so library
 $(LIBMEM_DIR)/$(BIN)/$(LIBMEM).so:
 	@mkdir -p $(BIN)
 	@$(MAKE) -C $(LIBMEM_DIR) CC="$(CC)" CFLAGS="$(CFLAGS)" EXT_LIBS="$(EXT_LIBS)"
