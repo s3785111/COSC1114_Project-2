@@ -56,9 +56,16 @@ int main(int argc, char *argv[]) {
       struct entry *head = SLIST_FIRST(&allocated_chunks);
       SLIST_REMOVE_HEAD(&allocated_chunks, entries); // Remove entry from LIFO
       dealloc(head->data);                           // Deallocate chunk stored in LIFO head
-
-      free(head);
+      free(head);                                    // Free memory removed from LIFO
     }
+  }
+
+  // Free any remaining nodes
+  struct entry *head = SLIST_FIRST(&allocated_chunks);
+  while (!SLIST_EMPTY(&allocated_chunks)) {
+    head = SLIST_FIRST(&allocated_chunks);
+    SLIST_REMOVE_HEAD(&allocated_chunks, entries);
+    free(head);
   }
 
   printBlks(ALLOCATED);

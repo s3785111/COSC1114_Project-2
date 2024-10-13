@@ -27,35 +27,40 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  struct slisthead allocated_chunks = SLIST_HEAD_INITIALIZER(allocated_chunks); // Create chunk LIFO buffer
-  char line[50];                                                                // No way test inputs should extend beyond this
+  // Create chunk LIFO
+  struct slisthead allocated_chunks = SLIST_HEAD_INITIALIZER(allocated_chunks);
 
+  // No way test inputs should extend beyond this
+  char line[50];
   while (fgets(line, sizeof(line), fp)) {
-
-    // ALLOC -----------------------------------
+    // [--------------------------------- ALLOC -----------------------------------]
     if (strncmp(line, "alloc:", 6) == 0) {
-
       // Allocate specified chunk size
       int size;
       sscanf(line + 6, "%d", &size);
       void *chunk = alloc(size);
 
       // Insert allocated chunk into LIFO
-      // (reusing mem buffer entry struct definition because lazy, does not need to be pretty)
+      // (reusing mem buffer entry struct because lazy, does not need to be pretty)
       struct entry *entry = malloc(sizeof(struct entry));
       entry->data         = chunk;
       SLIST_INSERT_HEAD(&allocated_chunks, entry, entries);
-
     }
-
-    // DEALLOC ---------------------------------
+    // [--------------------------------- DEALLOC ---------------------------------]
     else if (strncmp(line, "dealloc", 7) == 0) {
       struct entry *head = SLIST_FIRST(&allocated_chunks);
       SLIST_REMOVE_HEAD(&allocated_chunks, entries); // Remove entry from LIFO
       dealloc(head->data);                           // Deallocate chunk stored in LIFO head
-
-      free(head);
+      free(head);                                    // Free memory removed from LIFO
     }
+  }
+
+  // Free any remaining nodes
+  struct entry *head = SLIST_FIRST(&allocated_chunks);
+  while (!SLIST_EMPTY(&allocated_chunks)) {
+    head = SLIST_FIRST(&allocated_chunks);
+    SLIST_REMOVE_HEAD(&allocated_chunks, entries);
+    free(head);
   }
 
   printBlks(ALLOCATED);
