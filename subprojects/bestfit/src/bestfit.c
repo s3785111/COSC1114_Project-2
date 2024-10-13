@@ -35,8 +35,9 @@ int main(int argc, char *argv[]) {
   // Create chunk LIFO
   struct slisthead allocated_chunks = SLIST_HEAD_INITIALIZER(allocated_chunks);
 
-  // No way test inputs should extend beyond this
-  char line[50];
+  char line[50]; // No way test inputs should extend beyond this
+  struct entry *entry;
+
   while (fgets(line, sizeof(line), fp)) {
     // [--------------------------------- ALLOC -----------------------------------]
     if (strncmp(line, "alloc:", 6) == 0) {
@@ -47,25 +48,34 @@ int main(int argc, char *argv[]) {
 
       // Insert allocated chunk into LIFO
       // (reusing mem buffer entry struct because lazy, does not need to be pretty)
-      struct entry *entry = malloc(sizeof(struct entry));
-      entry->data         = chunk;
+      entry       = malloc(sizeof(struct entry));
+      entry->data = chunk;
       SLIST_INSERT_HEAD(&allocated_chunks, entry, entries);
     }
     // [--------------------------------- DEALLOC ---------------------------------]
     else if (strncmp(line, "dealloc", 7) == 0) {
-      struct entry *head = SLIST_FIRST(&allocated_chunks);
+      // Exit program if attempting to deallocate invalid address
+      //
+      // This validation occurs in the main loop as the node needs to be dereferenced
+      // in order to pass the previously allocated chunk address to ```dealloc```.
+      // Additional validation is performed by the allocator library to ensure the address
+      // it is passed is valid before attempting to deallocate.
+      if (!(entry = SLIST_FIRST(&allocated_chunks))) {
+        fprintf(stderr, "Fatal Error: Attempting to deallocate invalid address.\n");
+        return EXIT_FAILURE;
+      }
+      // Deallocate chunk, remove entry from list and free associated memory
+      dealloc(entry->data);                          // Deallocate chunk stored in LIFO head
       SLIST_REMOVE_HEAD(&allocated_chunks, entries); // Remove entry from LIFO
-      dealloc(head->data);                           // Deallocate chunk stored in LIFO head
-      free(head);                                    // Free memory removed from LIFO
+      free(entry);                                   // Free memory removed from LIFO
     }
   }
 
   // Free any remaining nodes
-  struct entry *head = SLIST_FIRST(&allocated_chunks);
   while (!SLIST_EMPTY(&allocated_chunks)) {
-    head = SLIST_FIRST(&allocated_chunks);
+    entry = SLIST_FIRST(&allocated_chunks);
     SLIST_REMOVE_HEAD(&allocated_chunks, entries);
-    free(head);
+    free(entry);
   }
 
   printBlks(ALLOCATED);

@@ -89,6 +89,9 @@ struct entry *_getNextEntry(AllocStatus status, struct entry *entry) {
  *
  * =============================================================================== */
 void *alloc(size_t chunk_size) {
+  #ifdef DEBUG
+    printf("Calling alloc with size: %zu...", chunk_size);
+  #endif
   struct entry *allocated_chunk;
 
   // Normalise chunk size to nearest valid number
@@ -114,16 +117,20 @@ void *alloc(size_t chunk_size) {
   // of linked lists would use dynamic allocation for "entries" or list nodes regardless.
   allocated_chunk = (struct entry *)sbrk(sizeof(struct entry));
   if (allocated_chunk == (void *)-1) {
-    fprintf(stderr, "Error: Failed to allocate memory for entry\n");
+    fprintf(stderr, "Fatal Error: Failed to allocate memory for entry\n");
     exit(EXIT_FAILURE);
   }
 
   // Allocate the requested block of memory
   allocated_chunk->data = sbrk(allocation_size);
   if (allocated_chunk->data == (void *)-1) {
-    fprintf(stderr, "Error: Failed to allocate memory with sbrk\n");
+    fprintf(stderr, "Fatal Error: Failed to allocate memory with sbrk\n");
     exit(EXIT_FAILURE);
   }
+
+  #ifdef DEBUG
+    printf(" successfully allocated block to %p\n", allocated_chunk->data);
+  #endif
 
   allocated_chunk->allocated_size = chunk_size;
   allocated_chunk->size           = allocation_size;
@@ -147,6 +154,9 @@ void *alloc(size_t chunk_size) {
  *
  * =============================================================================== */
 void dealloc(void *chunk) {
+  #ifdef DEBUG
+    printf("Calling dealloc on address %p... ", chunk);
+  #endif
 
   // Early exit with error if allocated list is empty
   if (SLIST_EMPTY(&allocatedHead)) {
@@ -182,6 +192,9 @@ void dealloc(void *chunk) {
       SLIST_REMOVE(&allocatedHead, searchedblk, entry, entries);
       SLIST_INSERT_HEAD(&freedHead, searchedblk, entries);
       searchedblk->allocated_size = 0;
+      #ifdef DEBUG
+        printf("Success.\n");
+      #endif
     }
 
     // Otherwise, exit with error code
