@@ -2,5 +2,6 @@
 #define _BESTFIT_H
 
 #include <math.h>
+#include <string.h>
 
 #endif

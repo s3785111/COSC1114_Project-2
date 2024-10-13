@@ -24,7 +24,7 @@ void *strategy(size_t __attribute__((unused)) chunk_size) {
  * =============================================================================== */
 void printBlk(AllocStatus status, struct entry *np) {
   printf(status == ALLOCATED ? "[Alloc]" : "[Dealloc]");
-  printf(" Size: %lu, Block: %p, Entry Pointer: %p\n", np->size, np->data, np);
+  printf("Address: %p, Total Chunk Size: %lu, Allocated Chunk Size: %lu\n", np->data, np->size, np->allocated_size);
 }
 
 /* =============================================================================== */
@@ -89,7 +89,6 @@ struct entry *_getNextEntry(AllocStatus status, struct entry *entry) {
  *
  * =============================================================================== */
 void *alloc(size_t chunk_size) {
-  printf("Calling alloc with size: %zu.\n", chunk_size);
   struct entry *allocated_chunk;
 
   // Normalise chunk size to nearest valid number
@@ -104,6 +103,7 @@ void *alloc(size_t chunk_size) {
   if ((allocated_chunk = strategy(allocation_size))) {
     SLIST_REMOVE(&freedHead, allocated_chunk, entry, entries);
     SLIST_INSERT_HEAD(&allocatedHead, allocated_chunk, entries);
+    allocated_chunk->allocated_size = chunk_size;
     return allocated_chunk->data;
   }
 
@@ -125,7 +125,8 @@ void *alloc(size_t chunk_size) {
     exit(EXIT_FAILURE);
   }
 
-  allocated_chunk->size = allocation_size;
+  allocated_chunk->allocated_size = chunk_size;
+  allocated_chunk->size           = allocation_size;
 
   // Insert the new entry into the allocated list
   SLIST_INSERT_HEAD(&allocatedHead, allocated_chunk, entries);
@@ -146,7 +147,6 @@ void *alloc(size_t chunk_size) {
  *
  * =============================================================================== */
 void dealloc(void *chunk) {
-  printf("Calling dealloc.\n");
 
   // Early exit with error if allocated list is empty
   if (SLIST_EMPTY(&allocatedHead)) {
@@ -154,14 +154,17 @@ void dealloc(void *chunk) {
     return;
   }
 
-  // Deallocate head if NULL is passed
-  if (chunk == NULL) {
-    struct entry *deallocmem = SLIST_FIRST(&allocatedHead);
-    SLIST_REMOVE_HEAD(&allocatedHead, entries);
-    SLIST_INSERT_HEAD(&freedHead, deallocmem, entries);
-  }
+  /* Initially implemented to simplify FIFO deallocation
+   *
+   * // Deallocate head if NULL is passed
+   * if (chunk == NULL) {
+   *   struct entry *deallocmem = SLIST_FIRST(&allocatedHead);
+   *   SLIST_REMOVE_HEAD(&allocatedHead, entries);
+   *   SLIST_INSERT_HEAD(&freedHead, deallocmem, entries);
+   * }
+   */
 
-  // Otherwise, search for block to deallocate
+  // Search for block to deallocate
   else {
     struct entry *deallocmem  = NULL;
     struct entry *searchedblk = NULL;
@@ -178,6 +181,7 @@ void dealloc(void *chunk) {
     if (searchedblk != NULL && searchedblk->data == chunk) {
       SLIST_REMOVE(&allocatedHead, searchedblk, entry, entries);
       SLIST_INSERT_HEAD(&freedHead, searchedblk, entries);
+      searchedblk->allocated_size = 0;
     }
 
     // Otherwise, exit with error code

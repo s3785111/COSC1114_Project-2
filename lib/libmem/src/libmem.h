@@ -16,6 +16,7 @@ typedef enum {
 
 struct entry {
   size_t size;
+  size_t allocated_size;
   void *data;
   SLIST_ENTRY(entry)
   entries;
