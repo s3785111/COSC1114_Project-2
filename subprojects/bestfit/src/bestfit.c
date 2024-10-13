@@ -21,14 +21,14 @@ int main(int argc, char *argv[]) {
 
   // Validate argument count
   if (argc != 2) {
-    fprintf(stderr, "Fatal Error: Received %d input arguments, expected 1.", argc);
+    fprintf(stderr, "Fatal Error: Received %d input arguments, expected 2.\n", argc);
     return EXIT_FAILURE;
   }
 
   // Attempt to open input file
   FILE *fp = fopen(argv[1], "r");
   if (fp == NULL) {
-    fprintf(stderr, "Fatal Error: Input file %s does not exist.", argv[1]);
+    fprintf(stderr, "Fatal Error: Input file %s does not exist.\n", argv[1]);
     return EXIT_FAILURE;
   }
 

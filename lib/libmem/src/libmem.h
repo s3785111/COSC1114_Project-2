@@ -1,8 +1,6 @@
 #ifndef _LIBMEM_H
 #define _LIBMEM_H
 
-#define _DEFAULT_SOURCE
-
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>

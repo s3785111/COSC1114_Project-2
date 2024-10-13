@@ -12,6 +12,10 @@ else
 	CFLAGS += -Wall -Werror -Wextra -std=c99
 endif
 
+ifndef GLIB
+	CFLAGS += -D _GNU_SOURCE
+endif
+
 EXT_LIBS = -lpthread
 
 BUILD_DIR = build
